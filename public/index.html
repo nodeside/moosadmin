@@ -12,10 +12,15 @@
   </head>
   <body>
 
-<div ng-controller="MainCtrl">
-  <div ui-grid="gridOptions"  ui-grid-pagination class="grid"></div>
-</div>
-
+    <div ng-controller="MainCtrl">
+      <div>
+        <label for="selectModel"> Select Model: </label>
+        <select name="selectModel" id="selectModel" ng-model="modelSelected">
+          <option ng-repeat="model in models" value="{{model}}">{{model}}</option>
+        </select>
+      </div>
+      <div ui-grid="gridOptions"  ui-grid-pagination  ui-grid-resize-columns ui-grid-move-columns class="grid"></div>
+    </div>
 
     <script src="index.js"></script>
   </body>
