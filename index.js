@@ -18,7 +18,7 @@ module.exports = function(mongoose, options) {
 
 	app.use('/', require('./routes')(Models));
 
-	app.use(express.static(path.join(__dirname,'public')));
+	app.use(express.static(path.join(__dirname, 'public')));
 
 	var models = mongoose.models;
 
@@ -72,9 +72,11 @@ module.exports = function(mongoose, options) {
 
 
 					var Query = Model.find({}, {});
+					var Count = Model.count();
 
 					if (req.params.id && mongoose.Types.ObjectId.isValid(req.params.id)) {
 						Query.where('_id', req.params.id);
+						Count.where('_id', req.params.id);
 					}
 
 					var limit = 100;
@@ -93,7 +95,7 @@ module.exports = function(mongoose, options) {
 
 					if (req.query.sort) {
 						var sort = {}
-						var validSortValues = ['1','-1','asc','desc','ascending','descending']
+						var validSortValues = ['1', '-1', 'asc', 'desc', 'ascending', 'descending']
 						req.query.order = req.query.order || -1;
 
 						if (validSortValues.indexOf(req.query.order) === -1) {
@@ -107,15 +109,25 @@ module.exports = function(mongoose, options) {
 					}
 
 
-
-					Query.exec(function(err, docs) {
-
+					Count.exec(function(err, count) {
 						if (err) {
 							return next(err);
 						}
 
-						res.send(docs);
+						Query.exec(function(err, docs) {
+
+							if (err) {
+								return next(err);
+							}
+
+							res.send({
+								count: count,
+								docs: docs
+							});
+						})
 					})
+
+
 				});
 			}
 
