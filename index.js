@@ -6,13 +6,13 @@ var express = require('express');
 
 var path = require('path')
 
-module.exports = function(mongoose) {
+module.exports = function(mongoose, options) {
 
 
 
 	var app = express();
 
-	app.listen(3006);
+	app.listen(options.port || 3006);
 
 	console.log('listening on 3006')
 
@@ -21,8 +21,6 @@ module.exports = function(mongoose) {
 	app.use(express.static(path.join(__dirname,'public')));
 
 	var models = mongoose.models;
-
-	//console.log(models)
 
 
 	for (var model in models) {
@@ -34,12 +32,9 @@ module.exports = function(mongoose) {
 			fields: {}
 		};
 
-
 		Models[model].totalFields = 0;
 
 		for (var field in paths) {
-			// console.log(field)
-
 
 			Models[model].totalFields++;
 			var inner = paths[field]
@@ -47,14 +42,11 @@ module.exports = function(mongoose) {
 
 			var refType = '';
 
-			//console.log(inner)
 			if (inner.options.type && inner.options.type.schemaName === 'ObjectId' && inner.options.ref) {
 				refType = inner.options.ref;
 			}
 
-			// console.log(inner)
 			var dataType = Object.getPrototypeOf(inner).constructor.schemaName;
-			//console.log(model+': '+field+': '+dataType + ' '+refType + ' Instance: ' +inner.instance+ ' Enum: '+inner.enumValues);
 
 			Models[model].fields[field] = {
 				// model: model,
@@ -64,8 +56,6 @@ module.exports = function(mongoose) {
 				instance: inner.instance,
 				enumValues: inner.enumValues || []
 			}
-
-			//switch 
 
 		}
 
@@ -134,15 +124,4 @@ module.exports = function(mongoose) {
 
 	}
 
-
-
-	//console.log(Models)
 }
-
-
-
-// for (var index in models) {
-// 	console.log(index)
-
-// 	console.log(models[index].schema.tree)
-// }
