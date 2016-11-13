@@ -8,25 +8,17 @@ var path = require('path')
 
 module.exports = function(mongoose, options) {
 
-
-
 	var app = express();
-
 	app.listen(options.port || 3006);
-
-	console.log('listening on 3006')
-
+	//console.log('listening on 3006')
 	app.use('/', require('./routes')(Models));
-
 	app.use(express.static(path.join(__dirname, 'public')));
 
 	var models = mongoose.models;
 
-
 	for (var model in models) {
 
 		var paths = models[model].schema.paths
-
 
 		Models[model] = Models[model] || {
 			fields: {}
@@ -38,7 +30,6 @@ module.exports = function(mongoose, options) {
 
 			Models[model].totalFields++;
 			var inner = paths[field]
-
 
 			var refType = '';
 
@@ -56,7 +47,6 @@ module.exports = function(mongoose, options) {
 				instance: inner.instance,
 				enumValues: inner.enumValues || []
 			}
-
 		}
 
 		for (var model in Models) {
@@ -67,10 +57,7 @@ module.exports = function(mongoose, options) {
 
 				app.get('/' + model + '/:id?', function(req, res, next) {
 
-
 					var Model = mongoose.model(model);
-
-
 					var Query = Model.find({}, {});
 					var Count = Model.count();
 
@@ -90,7 +77,6 @@ module.exports = function(mongoose, options) {
 						skip = parseInt(req.query.skip);
 					}
 
-
 					Query.limit(limit).skip(skip);
 
 					if (req.query.sort) {
@@ -101,13 +87,15 @@ module.exports = function(mongoose, options) {
 						if (validSortValues.indexOf(req.query.order) === -1) {
 							req.query.order = -1;
 						}
-
 						sort[req.query.sort] = req.query.order;
-
 						Query.sort(sort);
 
 					}
 
+console.log(req.query.filter)
+					if (req.query.filter) {
+
+					}
 
 					Count.exec(function(err, count) {
 						if (err) {
@@ -126,14 +114,8 @@ module.exports = function(mongoose, options) {
 							});
 						})
 					})
-
-
 				});
 			}
-
 		}
-
-
 	}
-
 }

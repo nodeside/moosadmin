@@ -43,6 +43,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
       useExternalPagination: true,
       useExternalSorting: true,
       enableFiltering: true,
+      useExternalFiltering: true,
       enableColumnResizing: true,
       //columnDefs: columnDefs,
 
@@ -64,6 +65,24 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
             paginationOptions.pageNumber = newPage;
             paginationOptions.pageSize = pageSize;
             getPage();
+         });
+
+
+         $scope.gridApi.core.on.filterChanged($scope, function() {
+            var grid = this.grid;
+            var urlVariables = '';
+            for (var col in grid.columns) {
+               if (!col.filters[0].term) {
+                  if (!urlVariables) {
+                     urlVariables = '?filter.' + col.filters[0].term;
+                  } else {
+                     urlVariables = '&filter.' + col.filters[0].term;
+                  }
+               }
+            }
+            $http.get('/' + $scope.modelSelected + urlVariables).success(function(data) {
+               $scope.gridOptions.data = data;
+            });
          });
 
          // $scope.gridApi.treeBase.on.rowExpanded($scope, function(row) {
@@ -119,19 +138,19 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
          $scope.gridOptions.data = data.docs.slice(firstRow, firstRow + paginationOptions.pageSize);
       });
 
-      $scope.saveRow = function(rowEntity) {
-         // create a fake promise - normally you'd use the promise returned by $http or $resource
-         var promise = $q.defer();
-         $scope.gridApi.rowEdit.setSavePromise(rowEntity, promise.promise);
+      // $scope.saveRow = function(rowEntity) {
+      //    // create a fake promise - normally you'd use the promise returned by $http or $resource
+      //    var promise = $q.defer();
+      //    $scope.gridApi.rowEdit.setSavePromise(rowEntity, promise.promise);
 
-         // fake a delay of 3 seconds whilst the save occurs, return error if gender is "male"
-         $interval(function() {
-            if (rowEntity.gender === 'male') {
-               promise.reject();
-            } else {
-               promise.resolve();
-            }
-         }, 3000, 1);
-      };
+      //    // fake a delay of 3 seconds whilst the save occurs, return error if gender is "male"
+      //    $interval(function() {
+      //       if (rowEntity.gender === 'male') {
+      //          promise.reject();
+      //       } else {
+      //          promise.resolve();
+      //       }
+      //    }, 3000, 1);
+      // };
    };
 }]);
