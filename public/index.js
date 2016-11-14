@@ -3,21 +3,15 @@ var app = angular.module('app', ['ngTouch', 'ui.grid',
    'ui.grid.resizeColumns',
    'ui.grid.moveColumns',
    'ui.grid.edit',
-   'ui.grid.rowEdit',
-   'ui.grid.cellNav'
+   'ui.grid.rowEdit'
    /*'ui.grid.treeView'*/
 ]);
 
 app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstants', function($scope, $http, $interval, $q, uiGridConstants) {
 
    var modelNames = [];
-   var modelSelected = '';
    var modelSchema = {};
-   $scope.$watch('modelSelected', function(newValue, oldValue) {
-      if (newValue != oldValue) {
-         getPage();
-      }
-   });
+   $scope.show = false;
 
    var init = function() {
       $http.get('/').then(function(res) {
@@ -30,12 +24,17 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
    }
    init();
 
-
    var paginationOptions = {
       pageNumber: 1,
       pageSize: 5,
       sort: null
    };
+   var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
+   var filterVar = '';
+   var noCellEdit = {
+      id: '_id',
+      v: '__v'
+   }
 
    $scope.gridOptions = {
       paginationPageSizes: [5, 25, 50, 75],
@@ -45,6 +44,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
       enableFiltering: true,
       useExternalFiltering: true,
       enableColumnResizing: true,
+      enableCellEdit: true,
       //columnDefs: columnDefs,
 
       onRegisterApi: function(gridApi) {
@@ -58,99 +58,85 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
                paginationOptions.sort = sortColumns[0].sort.direction;
                paginationOptions.sortField = sortColumns[0].field;
             }
-            getPage();
+            $scope.getPage();
          });
+
 
          gridApi.pagination.on.paginationChanged($scope, function(newPage, pageSize) {
             paginationOptions.pageNumber = newPage;
             paginationOptions.pageSize = pageSize;
-            getPage();
+            pageSettings = '?pageNumber=' + newPage + '&pageSize=' + pageSize;
+            $scope.getPage();
          });
 
 
          $scope.gridApi.core.on.filterChanged($scope, function() {
             var grid = this.grid;
-            var urlVariables = '';
             for (var col in grid.columns) {
-               if (!col.filters[0].term) {
-                  if (!urlVariables) {
-                     urlVariables = '?filter.' + col.filters[0].term;
-                  } else {
-                     urlVariables = '&filter.' + col.filters[0].term;
-                  }
+               if (grid.columns[col].filters[0].term != null) {
+                  filterVar += '&filter=' + grid.columns[col].field + '.' + grid.columns[col].filters[0].term;
                }
             }
-            $http.get('/' + $scope.modelSelected + urlVariables).success(function(data) {
-               $scope.gridOptions.data = data;
-            });
+            $scope.getPage();
          });
 
-         // $scope.gridApi.treeBase.on.rowExpanded($scope, function(row) {
-         //    if (row.entity.$$hashKey === $scope.gridOptions.data[50].$$hashKey && !$scope.nodeLoaded) {
-         //       $interval(function() {
-         //          $scope.gridOptions.data.splice(51, 0, {
-         //             name: 'Dynamic 1',
-         //             gender: 'female',
-         //             age: 53,
-         //             company: 'Griddable grids',
-         //             balance: 38000,
-         //             $$treeLevel: 1
-         //          }, {
-         //             name: 'Dynamic 2',
-         //             gender: 'male',
-         //             age: 18,
-         //             company: 'Griddable grids',
-         //             balance: 29000,
-         //             $$treeLevel: 1
-         //          });
-         //          $scope.nodeLoaded = true;
-         //       }, 2000, 1);
-         //    }
-         // });
+
+         gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
+            $http.post('/edit', {
+               model: $scope.modelSelected,
+               id: rowEntity.id,
+               colDef: colDef.name,
+               newValue: newValue,
+               oldValue: oldValue
+            }).then(function(data) {
+               console.log('Update Successful')
+            }, function(error) {
+               console.log('Update failed')
+            });
+         });
       }
    };
 
-   var getPage = function() {
+
+   $scope.getPage = function(clear) {
+
+      if (clear == true) {
+         pageSettings = '';
+         filterVar = '';
+      }
+
       var url;
       switch (paginationOptions.sort) {
          case uiGridConstants.ASC:
-            url = '/' + $scope.modelSelected + '?sort=' + paginationOptions.sortField + '&order=1';
+            url = '/' + $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=1';
             break;
          case uiGridConstants.DESC:
-            url = '/' + $scope.modelSelected + '?sort=' + paginationOptions.sortField + '&order=-1';
+            url = '/' + $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=-1';
             break;
          default:
-            url = '/' + $scope.modelSelected;
+            url = '/' + $scope.modelSelected + pageSettings + filterVar;
             break;
       }
 
       $http.get(url).success(function(data) {
          $scope.gridOptions.columnDefs = [];
-
          for (var key in modelSchema[$scope.modelSelected].fields) {
-            $scope.gridOptions.columnDefs.push({
-               name: key
-            });
+            if (key == noCellEdit.id || key == noCellEdit.v) {
+               $scope.gridOptions.columnDefs.push({
+                  name: key,
+                  width: 100,
+                  enableCellEdit: false
+               });
+            } else {
+               $scope.gridOptions.columnDefs.push({
+                  name: key,
+                  width: 100
+               });
+            }
          }
-
          $scope.gridOptions.totalItems = data.count;
-         var firstRow = (paginationOptions.pageNumber - 1) * paginationOptions.pageSize;
-         $scope.gridOptions.data = data.docs.slice(firstRow, firstRow + paginationOptions.pageSize);
+         $scope.gridOptions.data = data.docs;
+         $scope.show = true;
       });
-
-      // $scope.saveRow = function(rowEntity) {
-      //    // create a fake promise - normally you'd use the promise returned by $http or $resource
-      //    var promise = $q.defer();
-      //    $scope.gridApi.rowEdit.setSavePromise(rowEntity, promise.promise);
-
-      //    // fake a delay of 3 seconds whilst the save occurs, return error if gender is "male"
-      //    $interval(function() {
-      //       if (rowEntity.gender === 'male') {
-      //          promise.reject();
-      //       } else {
-      //          promise.resolve();
-      //       }
-      //    }, 3000, 1);
-      // };
    };
 }]);
