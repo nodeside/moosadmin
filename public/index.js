@@ -26,7 +26,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
 
    var defaultColumn = {
       name: '_id',
-      width: 100,
+      width: 150,
       filter: {}
    }
 
@@ -172,36 +172,33 @@ app.controller('MainCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
 
       $http.get(url).success(function(data) {
 
-
          // Creating columDefs
          $scope.gridOptions.columnDefs = [];
 
          for (var key in modelSchema[$scope.modelSelected].fields) {
 
-
             var column = {
                name: key,
-               width: 100
+               width: 150
             };
             var query = parseQuery(window.location.search);
-
             if (query._id && key === '_id') {
                column.filter = {
                   term: query._id
                }
             }
-
             if (key == noCellEdit.id || key == noCellEdit.v) {
                column.enableCellEdit = false;
 
             }
-
             if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID') {
                column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + modelSchema[$scope.modelSelected].fields[key].refType + '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
             }
-
-
-            $scope.gridOptions.columnDefs.push(column)
+            if (key === '_id') {
+               $scope.gridOptions.columnDefs.unshift(column)
+            } else {
+               $scope.gridOptions.columnDefs.push(column)
+            }
          }
          $scope.gridOptions.totalItems = data.count;
          $scope.gridOptions.data = data.docs;
