@@ -18,7 +18,7 @@ function parseQuery(qstr) {
    return query;
 }
 
-app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstants', function($scope, $http, $interval, $q, uiGridConstants) {
+app.controller('MainCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', function($scope, $http, $timeout, uiGridConstants) {
 
    var modelNames = [];
    var modelSchema = {};
@@ -84,13 +84,9 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
          for (var col in gridApi.grid.columns) {
             console.log(col)
             if (gridApi.grid.columns[col].filters[0].term != null) {
-
                filterVar += '&filter[' + gridApi.grid.columns[col].field + ']=' + gridApi.grid.columns[col].filters[0].term;
             }
          }
-
-         console.log(filterVar)
-            // gridApi.rowEdit.on.saveRow($scope, $scope.saveRow);
 
          // Sorting
          $scope.gridApi.core.on.sortChanged($scope, function(grid, sortColumns) {
@@ -103,6 +99,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
             $scope.getPage();
          });
 
+
          // Pagingation         
          gridApi.pagination.on.paginationChanged($scope, function(newPage, pageSize) {
             paginationOptions.pageNumber = newPage;
@@ -111,39 +108,32 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
             $scope.getPage();
          });
 
+
          // Filtering
          $scope.gridApi.core.on.filterChanged($scope, function() {
             var grid = this.grid;
-
-
             filterVar = '';
             for (var col in grid.columns) {
                if (grid.columns[col].filters[0].term != null) {
-
                   filterVar += '&filter[' + grid.columns[col].field + ']=' + grid.columns[col].filters[0].term;
                }
             }
-
-
             $scope.getPage();
          });
 
 
          // Editing
          gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
-
             var updateData = {};
-
             updateData[colDef.name] = newValue;
-
-
             $http.put('/api/' + $scope.modelSelected + '/' + rowEntity._id, updateData).then(function(data) {
-
                for (var index in data.data) {
                   rowEntity[index] = data.data[index];
+                  $scope.lastCellEdited = 'edited row id: ' + rowEntity._id + ' - Column: ' + colDef.name + ' - newValue: ' + newValue + ' - oldValue: ' + oldValue;
+                  $timeout(function() {
+                     $scope.$apply()
+                  });
                }
-
-
             }, function(error) {
                alert('Update failed')
             });
@@ -158,25 +148,25 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
          pageSettings = '?pageNumber=' + 1 + '&pageSize=' + $scope.gridOptions.paginationPageSize;
          filterVar = '';
       }
-     
-     // Temporary 
+
+      // Temporary 
       var query = parseQuery(window.location.search);
 
       if (query._id) {
-         filterVar += '&filter[_id]='+query._id;
+         filterVar += '&filter[_id]=' + query._id;
       }
 
 
-      var url;
+      var url = '/api/';
       switch (paginationOptions.sort) {
          case uiGridConstants.ASC:
-            url = '/api/' + $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=1';
+            url += $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=1';
             break;
          case uiGridConstants.DESC:
-            url = '/api/' + $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=-1';
+            url += $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=-1';
             break;
          default:
-            url = '/api/' + $scope.modelSelected + pageSettings + filterVar;
+            url += $scope.modelSelected + pageSettings + filterVar;
             break;
       }
 
@@ -207,7 +197,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
             }
 
             if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID') {
-               column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + modelSchema[$scope.modelSelected].fields[key].refType+ '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
+               column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + modelSchema[$scope.modelSelected].fields[key].refType + '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
             }
 
 
