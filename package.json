@@ -4,6 +4,7 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
+    "body-parser": "^1.15.2",
     "express": "^4.14.0",
     "mongoose": "^4.6.6"
   },
@@ -15,10 +16,20 @@
     "type": "git",
     "url": "git+ssh://git@github.com/nodeside/moosadmin.git"
   },
-  "author": "Yonatan Ellman <yonatan@nodeside.com>",
+  "author": {
+    "name": "Yonatan Ellman",
+    "email": "yonatan@nodeside.com"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/nodeside/moosadmin/issues"
   },
-  "homepage": "https://github.com/nodeside/moosadmin#readme"
+  "homepage": "https://github.com/nodeside/moosadmin#readme",
+  "gitHead": "7e27103a31d94fec28b502d667d20ddeec2ce1fa",
+  "readme": "# moosadmin\n",
+  "readmeFilename": "README.md",
+  "_id": "moosadmin@1.0.0",
+  "_shasum": "7921812889aedfe0a766843ce0f01755f8ba6859",
+  "_from": "git+https://github.com/nodeside/moosadmin.git",
+  "_resolved": "git+https://github.com/nodeside/moosadmin.git#7e27103a31d94fec28b502d667d20ddeec2ce1fa"
 }

@@ -2,8 +2,7 @@ var app = angular.module('app', ['ngTouch', 'ui.grid',
    'ui.grid.pagination',
    'ui.grid.resizeColumns',
    'ui.grid.moveColumns',
-   'ui.grid.edit',
-   'ui.grid.rowEdit'
+   'ui.grid.edit'
    /*'ui.grid.treeView'*/
 ]);
 
@@ -49,7 +48,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
 
       onRegisterApi: function(gridApi) {
          $scope.gridApi = gridApi;
-         gridApi.rowEdit.on.saveRow($scope, $scope.saveRow);
+         // gridApi.rowEdit.on.saveRow($scope, $scope.saveRow);
 
          $scope.gridApi.core.on.sortChanged($scope, function(grid, sortColumns) {
             if (sortColumns.length == 0) {
@@ -72,26 +71,37 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
 
          $scope.gridApi.core.on.filterChanged($scope, function() {
             var grid = this.grid;
+
+
+            filterVar = '';
             for (var col in grid.columns) {
                if (grid.columns[col].filters[0].term != null) {
-                  filterVar += '&filter=' + grid.columns[col].field + '.' + grid.columns[col].filters[0].term;
+
+                  filterVar += '&filter[' + grid.columns[col].field + ']=' + grid.columns[col].filters[0].term;
                }
             }
+
+
             $scope.getPage();
          });
 
 
          gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
-            $http.post('/edit', {
-               model: $scope.modelSelected,
-               id: rowEntity.id,
-               colDef: colDef.name,
-               newValue: newValue,
-               oldValue: oldValue
-            }).then(function(data) {
-               console.log('Update Successful')
+
+            var updateData = {};
+
+            updateData[colDef.name] = newValue;
+
+
+            $http.put('/' + $scope.modelSelected + '/' + rowEntity._id, updateData).then(function(data) {
+
+               for (var index in data.data) {
+                  rowEntity[index] = data.data[index];
+               }
+
+
             }, function(error) {
-               console.log('Update failed')
+               alert('Update failed')
             });
          });
       }
@@ -101,7 +111,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
    $scope.getPage = function(clear) {
 
       if (clear == true) {
-         pageSettings = '';
+         pageSettings = '?pageNumber=' + 1 + '&pageSize=' + $scope.gridOptions.paginationPageSize;
          filterVar = '';
       }
 
