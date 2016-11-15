@@ -130,7 +130,8 @@ function injectGet(model) {
 								Query.where(name, req.query.filter[name]);
 							}
 							break;
-						case 'Number':							
+						case 'Number':	
+						case 'Boolean':
 								Count.where(name, req.query.filter[name]);
 								Query.where(name, req.query.filter[name]);
 							
