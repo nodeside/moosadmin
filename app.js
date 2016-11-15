@@ -20,7 +20,7 @@ module.exports = function(mng, options) {
 
 	app.use(bodyParser.json());
 	// Require and create routing based on the Models
-	app.get('/', function(req, res) {
+	app.get('/api', function(req, res) {
 		res.send(Models);
 	});
 
@@ -74,7 +74,7 @@ function buildKeyValueModelData(models) {
 
 function injectGet(model) {
 
-	app.get('/' + model + '/:id?', function(req, res, next) {
+	app.get('/api/' + model + '/:id?', function(req, res, next) {
 		var Model = mongoose.model(model);
 		var Query = Model.find({}, {});
 		var Count = Model.count();
@@ -166,7 +166,7 @@ function injectGet(model) {
 }
 
 function injectPut(model) {
-	app.put('/' + model + '/:id', function(req, res, next) {
+	app.put('/api/' + model + '/:id', function(req, res, next) {
 		var Model = mongoose.model(model);
 
 
