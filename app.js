@@ -32,6 +32,8 @@ module.exports = function(mng, options) {
 
 	// Exposing static files for the front end
 	app.use(express.static(path.join(__dirname, 'public')));
+	app.use('/angular-ui-bootstrap',express.static(path.join(__dirname, 'node_modules/angular-ui-bootstrap/dist')));
+	app.use('/bootstrap',express.static( path.join(__dirname, 'node_modules/bootstrap/dist')));
 
 	app.listen(options.port || 3006);
 	console.log('Moosadmin is listening on port: ' + (options.port || 3006));

@@ -4,7 +4,9 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
+    "angular-ui-bootstrap": "^2.2.0",
     "body-parser": "^1.15.2",
+    "bootstrap": "^3.3.7",
     "express": "^4.14.0",
     "mongoose": "^4.6.6"
   },
@@ -29,7 +31,7 @@
   "readme": "# moosadmin\n",
   "readmeFilename": "README.md",
   "_id": "moosadmin@1.0.0",
-  "_shasum": "7921812889aedfe0a766843ce0f01755f8ba6859",
+  "_shasum": "343895726a7cba56b0c554a8074778667cde4c69",
   "_from": "git+https://github.com/nodeside/moosadmin.git",
-  "_resolved": "git+https://github.com/nodeside/moosadmin.git#7e27103a31d94fec28b502d667d20ddeec2ce1fa"
+  "_resolved": "git+https://github.com/nodeside/moosadmin.git#159a7e613b38dae59628260510bfc864fca139b2"
 }

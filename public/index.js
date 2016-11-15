@@ -1,4 +1,4 @@
-var app = angular.module('moosadmin', ['ngTouch', 'ui.router', 'ui.grid',
+var app = angular.module('moosadmin', ['ui.bootstrap', 'ngTouch', 'ui.router', 'ui.grid',
    'ui.grid.pagination',
    'ui.grid.resizeColumns',
    'ui.grid.moveColumns',
