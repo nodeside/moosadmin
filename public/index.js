@@ -158,7 +158,8 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
          pageSettings = '?pageNumber=' + 1 + '&pageSize=' + $scope.gridOptions.paginationPageSize;
          filterVar = '';
       }
-      
+     
+     // Temporary 
       var query = parseQuery(window.location.search);
 
       if (query._id) {
@@ -206,7 +207,7 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstan
             }
 
             if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID') {
-               column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + $scope.modelSelected + '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
+               column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + modelSchema[$scope.modelSelected].fields[key].refType+ '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
             }
 
 

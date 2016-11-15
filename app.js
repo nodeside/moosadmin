@@ -130,6 +130,12 @@ function injectGet(model) {
 								Query.where(name, req.query.filter[name]);
 							}
 							break;
+						case 'Number':							
+								Count.where(name, req.query.filter[name]);
+								Query.where(name, req.query.filter[name]);
+							
+							break;
+
 						default:
 							if (req.query.filter[name]) {
 								Count.where(name, {
