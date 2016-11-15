@@ -3,7 +3,6 @@
   <head>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular-touch.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular-animate.js"></script>
     <script src="http://ui-grid.info/docs/grunt-scripts/csv.js"></script>
     <script src="http://ui-grid.info/docs/grunt-scripts/pdfmake.js"></script>
     <script src="http://ui-grid.info/docs/grunt-scripts/vfs_fonts.js"></script>
@@ -15,11 +14,17 @@
     <div ng-controller="MainCtrl">
       <div>
         <label for="selectModel"> Select Model: </label>
-        <select name="selectModel" id="selectModel" ng-model="modelSelected">
+        <select name="selectModel" id="selectModel" ng-model="modelSelected" ng-click="getPage(true)">
           <option ng-repeat="model in models" value="{{model}}">{{model}}</option>
         </select>
       </div>
-      <div ui-grid="gridOptions"  ui-grid-pagination  ui-grid-resize-columns ui-grid-move-columns class="grid"></div>
+      <div ui-grid="gridOptions" class="grid" ng-if="show"
+            ui-grid-pagination  
+            ui-grid-resize-columns 
+            ui-grid-move-columns
+            ui-grid-edit
+            ui-grid-row-edit 
+            ui-grid-tree-view></div>
     </div>
 
     <script src="index.js"></script>

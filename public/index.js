@@ -1,16 +1,17 @@
-var app = angular.module('app', ['ngTouch', 'ui.grid', 'ui.grid.pagination']);
+var app = angular.module('app', ['ngTouch', 'ui.grid',
+   'ui.grid.pagination',
+   'ui.grid.resizeColumns',
+   'ui.grid.moveColumns',
+   'ui.grid.edit',
+   'ui.grid.rowEdit'
+   /*'ui.grid.treeView'*/
+]);
 
-app.controller('MainCtrl', ['$scope', '$http', '$interval', 'uiGridConstants', function($scope, $http, $interval, uiGridConstants) {
+app.controller('MainCtrl', ['$scope', '$http', '$interval', '$q', 'uiGridConstants', function($scope, $http, $interval, $q, uiGridConstants) {
 
-   var columnDefs = [];
    var modelNames = [];
-   var modelSelected = '';
    var modelSchema = {};
-   $scope.$watch('modelSelected', function(newValue, oldValue) {
-      if (newValue != oldValue) {
-         getPage();
-      }
-   });
+   $scope.show = false;
 
    var init = function() {
       $http.get('/').then(function(res) {
@@ -23,19 +24,17 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', 'uiGridConstants', f
    }
    init();
 
-
-   // angular.forEach(res, function(value, key) {
-   //       columnDefs = {
-   //         name: value,
-   //         enableFiltering: false
-   //       }
-   //     });
-
    var paginationOptions = {
       pageNumber: 1,
       pageSize: 5,
       sort: null
    };
+   var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
+   var filterVar = '';
+   var noCellEdit = {
+      id: '_id',
+      v: '__v'
+   }
 
    $scope.gridOptions = {
       paginationPageSizes: [5, 25, 50, 75],
@@ -44,117 +43,100 @@ app.controller('MainCtrl', ['$scope', '$http', '$interval', 'uiGridConstants', f
       useExternalSorting: true,
       enableFiltering: true,
       useExternalFiltering: true,
-        enableColumnResizing: true,
+      enableColumnResizing: true,
+      enableCellEdit: true,
+      //columnDefs: columnDefs,
 
-      columnDefs: columnDefs,
-      // columnDefs: [{
-      //   name: 'name',
-      //   enableFiltering: false,
-      // }, {
-      //   name: 'gender',
-      //   enableSorting: false,
-      //   enableFiltering: false,
-
-      // }, {
-      //   name: 'company',
-      //   enableSorting: false
-      // }],
       onRegisterApi: function(gridApi) {
          $scope.gridApi = gridApi;
-
-         // $scope.gridApi.core.on.filterChanged($scope, function() {
-         //   var grid = this.grid;
-         //   if (grid.columns[1].filters[0].term === 'male') {
-         //     $http.get('https://cdn.rawgit.com/angular-ui/ui-grid.info/gh-pages/data/100_male.json')
-         //       .success(function(data) {
-         //         $scope.gridOptions.data = data;
-         //       });
-         //   } else if (grid.columns[1].filters[0].term === 'female') {
-         //     $http.get('https://cdn.rawgit.com/angular-ui/ui-grid.info/gh-pages/data/100_female.json')
-         //       .success(function(data) {
-         //         $scope.gridOptions.data = data;
-         //       });
-         //   } else {
-         //     $http.get('https://cdn.rawgit.com/angular-ui/ui-grid.info/gh-pages/data/100.json')
-         //       .success(function(data) {
-         //         $scope.gridOptions.data = data;
-         //       });
-         //   }
-         // });
+         gridApi.rowEdit.on.saveRow($scope, $scope.saveRow);
 
          $scope.gridApi.core.on.sortChanged($scope, function(grid, sortColumns) {
-
             if (sortColumns.length == 0) {
                paginationOptions.sort = null;
             } else {
                paginationOptions.sort = sortColumns[0].sort.direction;
                paginationOptions.sortField = sortColumns[0].field;
             }
-            getPage();
+            $scope.getPage();
          });
 
 
          gridApi.pagination.on.paginationChanged($scope, function(newPage, pageSize) {
             paginationOptions.pageNumber = newPage;
             paginationOptions.pageSize = pageSize;
-            getPage();
+            pageSettings = '?pageNumber=' + newPage + '&pageSize=' + pageSize;
+            $scope.getPage();
+         });
+
+
+         $scope.gridApi.core.on.filterChanged($scope, function() {
+            var grid = this.grid;
+            for (var col in grid.columns) {
+               if (grid.columns[col].filters[0].term != null) {
+                  filterVar += '&filter=' + grid.columns[col].field + '.' + grid.columns[col].filters[0].term;
+               }
+            }
+            $scope.getPage();
+         });
+
+
+         gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
+            $http.post('/edit', {
+               model: $scope.modelSelected,
+               id: rowEntity.id,
+               colDef: colDef.name,
+               newValue: newValue,
+               oldValue: oldValue
+            }).then(function(data) {
+               console.log('Update Successful')
+            }, function(error) {
+               console.log('Update failed')
+            });
          });
       }
    };
 
-   var getPage = function() {
-      var url;
 
-      console.log(paginationOptions)
+   $scope.getPage = function(clear) {
+
+      if (clear == true) {
+         pageSettings = '';
+         filterVar = '';
+      }
+
+      var url;
       switch (paginationOptions.sort) {
          case uiGridConstants.ASC:
-            url = '/' + $scope.modelSelected + '?sort=' + paginationOptions.sortField + '&order=1';
+            url = '/' + $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=1';
             break;
          case uiGridConstants.DESC:
-            url = '/' + $scope.modelSelected + '?sort=' + paginationOptions.sortField + '&order=-1';
+            url = '/' + $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=-1';
             break;
          default:
-            url = '/' + $scope.modelSelected;
+            url = '/' + $scope.modelSelected + pageSettings + filterVar;
             break;
       }
 
-      $http.get(url)
-         .success(function(data) {
-            $scope.gridOptions.columnDefs = [];
-
-            for (var key in modelSchema[$scope.modelSelected].fields) {
+      $http.get(url).success(function(data) {
+         $scope.gridOptions.columnDefs = [];
+         for (var key in modelSchema[$scope.modelSelected].fields) {
+            if (key == noCellEdit.id || key == noCellEdit.v) {
                $scope.gridOptions.columnDefs.push({
                   name: key,
-                  enableColumnResizing:true
-             
-               })
+                  width: 100,
+                  enableCellEdit: false
+               });
+            } else {
+               $scope.gridOptions.columnDefs.push({
+                  name: key,
+                  width: 100
+               });
             }
-
-            /*
-
-[{
-      //   name: 'name',
-      //   enableFiltering: false,
-      // }, {
-      //   name: 'gender',
-      //   enableSorting: false,
-      //   enableFiltering: false,
-
-      // }, {
-      //   name: 'company',
-      //   enableSorting: false
-      // }]
-
-            */
-            // columnDefs = [];
-            //  for (var index in data.docs[0]) {
-            //    columnDefs += '{' + index + '},'
-            // }
-            $scope.gridOptions.totalItems = data.count;
-            var firstRow = (paginationOptions.pageNumber - 1) * paginationOptions.pageSize;
-            $scope.gridOptions.data = data.docs.slice(firstRow, firstRow + paginationOptions.pageSize);
-         });
+         }
+         $scope.gridOptions.totalItems = data.count;
+         $scope.gridOptions.data = data.docs;
+         $scope.show = true;
+      });
    };
-
-   //getPage();
 }]);

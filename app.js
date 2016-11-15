@@ -8,25 +8,17 @@ var path = require('path')
 
 module.exports = function(mongoose, options) {
 
-
-
 	var app = express();
-
 	app.listen(options.port || 3006);
-
-	console.log('listening on 3006')
-
+	//console.log('listening on 3006')
 	app.use('/', require('./routes')(Models));
-
 	app.use(express.static(path.join(__dirname, 'public')));
 
 	var models = mongoose.models;
 
-
 	for (var model in models) {
 
 		var paths = models[model].schema.paths
-
 
 		Models[model] = Models[model] || {
 			fields: {}
@@ -38,7 +30,6 @@ module.exports = function(mongoose, options) {
 
 			Models[model].totalFields++;
 			var inner = paths[field]
-
 
 			var refType = '';
 
@@ -56,7 +47,6 @@ module.exports = function(mongoose, options) {
 				instance: inner.instance,
 				enumValues: inner.enumValues || []
 			}
-
 		}
 
 		for (var model in Models) {
@@ -66,11 +56,8 @@ module.exports = function(mongoose, options) {
 			function loadModel(model) {
 
 				app.get('/' + model + '/:id?', function(req, res, next) {
-
-
+console.log(req.query)
 					var Model = mongoose.model(model);
-
-
 					var Query = Model.find({}, {});
 					var Count = Model.count();
 
@@ -82,14 +69,13 @@ module.exports = function(mongoose, options) {
 					var limit = 100;
 					var skip = 0;
 
-					if (req.query.limit && !isNaN(req.query.limit)) {
-						limit = parseInt(req.query.limit);
+					if (req.query.pageSize && !isNaN(req.query.pageSize)) {
+						limit = parseInt(req.query.pageSize);
 					}
 
-					if (req.query.skip && !isNaN(req.query.skip)) {
-						skip = parseInt(req.query.skip);
+					if (req.query.pageNumber && !isNaN(req.query.pageNumber)) {
+						skip = parseInt(req.query.pageNumber) - 1;
 					}
-
 
 					Query.limit(limit).skip(skip);
 
@@ -101,13 +87,23 @@ module.exports = function(mongoose, options) {
 						if (validSortValues.indexOf(req.query.order) === -1) {
 							req.query.order = -1;
 						}
-
 						sort[req.query.sort] = req.query.order;
-
 						Query.sort(sort);
-
 					}
 
+					if (req.query.filter) {
+						
+						var filters = [];
+						for (var filter in req.query.filter) {
+							filter.push({
+								field: filter.substring(0, filter.indexOf('.')),
+								data: filter.split('.')[1]
+							});
+						}
+						console.log(filters)
+						//Model.find({})
+
+					}
 
 					Count.exec(function(err, count) {
 						if (err) {
@@ -119,21 +115,39 @@ module.exports = function(mongoose, options) {
 							if (err) {
 								return next(err);
 							}
-
 							res.send({
 								count: count,
 								docs: docs
 							});
 						})
 					})
+				});
 
+				app.post('/edit', function(req, res, next) {
+
+					var Model = mongoose.model(model);
+					var Query = Model.find({}, {});
 
 				});
 			}
-
 		}
-
-
 	}
+}
 
+
+function objToDotNotation(obj, options) {
+	var out = options.append || {};
+	flattenFields(options.prefix || '', obj, out);
+	return out;
+}
+
+function flattenFields(prefix, details, obj) {
+	for (var i in details) {
+		if (typeof details[i] === 'object') {
+			flattenFields(prefix + '.' +
+				i, details[i], obj)
+		} else {
+			obj[prefix + '.' + i] = details[i];
+		}
+	}
 }
