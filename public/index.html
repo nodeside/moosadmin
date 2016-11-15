@@ -19,6 +19,8 @@
           <option ng-repeat="model in models" value="{{model}}">{{model}}</option>
         </select>
       </div>
+      <strong>Data Length:</strong> {{ gridOptions.data.length | number }}<br/>
+      <strong>Last Cell Edited:</strong> {{lastCellEdited}}<br/>
       <div ui-grid="gridOptions" class="grid" ng-if="show"
             ui-grid-pagination  
             ui-grid-resize-columns 
