@@ -12,8 +12,11 @@ app.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $ur
 
    $stateProvider
       .state('grid', {
-         url: '/grid',
+         url: '/grid?moosadminModel&_id&moosLink',
          templateUrl: '/templates/grid.html',
-         controller: 'GridCtrl'
+         controller: 'GridCtrl',
+         controllerAs: 'Grid',
+         reloadOnSearch: false
+
       });
 }]);

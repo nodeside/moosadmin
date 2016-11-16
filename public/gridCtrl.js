@@ -1,4 +1,6 @@
-app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', function($scope, $http, $timeout, uiGridConstants) {
+app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$stateParams', '$location', '$rootScope', function($scope, $http, $timeout, uiGridConstants, $stateParams, $location, $rootScope) {
+
+   var Grid = this;
 
    var modelNames = [];
    var modelSchema = {};
@@ -14,32 +16,87 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
       pageSize: 5,
       sort: null
    };
+
+   $scope.changeModel = function() {
+      $location.search({
+         'moosadminModel': $scope.modelSelected
+      });
+
+      setColumnsAndFilters();
+      $scope.getPage();
+   }
+
+   function setColumnsAndFilters() {
+      $scope.gridOptions.columnDefs = [];
+      for (var key in modelSchema[$scope.modelSelected].fields) {
+
+         var column = {
+            name: key,
+            width: 150
+         };
+
+         //         console.log(key)
+
+         if ($location.search()[key] && modelSchema[$scope.modelSelected].fields[key]) {
+            column.filter = {
+               term: $location.search()[key]
+            }
+         }
+         if (key == noCellEdit.id || key == noCellEdit.v) {
+            column.enableCellEdit = false;
+
+         }
+         if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID' && modelSchema[$scope.modelSelected].fields[key].refType) {
+            column.cellTemplate = `<div ui-sref-opts="{inherit: false}" ui-sref="grid({ moosLink:true, moosadminModel: '${modelSchema[$scope.modelSelected].fields[key].refType}', _id:'{{COL_FIELD}}' }) " class="ui-grid-cell-contents">${modelSchema[$scope.modelSelected].fields[key].refType}: <a href="#">{{COL_FIELD}}</a></div>`;
+            column.width = 200;
+         }
+         if (key === '_id') {
+            $scope.gridOptions.columnDefs.unshift(column)
+         } else {
+            console.log(column)
+            $scope.gridOptions.columnDefs.push(column)
+         }
+      }
+
+   }
+
+   $rootScope.$on('$locationChangeSuccess', function(event) {
+
+      if ($location.search().moosadminModel && $location.search().moosLink) {
+         $scope.modelSelected = $location.search().moosadminModel;
+         setColumnsAndFilters();
+         $scope.getPage();
+      }
+
+
+
+   });
+
+
    var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
-   var filterVar = '';
+
    var noCellEdit = {
       id: '_id',
       v: '__v'
    }
 
    var init = function() {
+
       $http.get('/api').then(function(res) {
          modelSchema = res.data;
          for (var name in res.data) {
             modelNames.push(name);
          }
          $scope.models = modelNames;
-
-         //yes this is horrible and is only for the next few hours
-
-         var query = parseQuery(window.location.search);
-
-         if (query.model) {
-            $scope.modelSelected = query.model
+         if ($location.search().moosadminModel && modelNames.indexOf($location.search().moosadminModel) !== -1) {
+            $scope.modelSelected = $location.search().moosadminModel;
+            setColumnsAndFilters();
             $scope.getPage();
-         }
 
+         }
       });
    }
+
    init();
 
    $scope.gridOptions = {
@@ -56,15 +113,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
       onRegisterApi: function(gridApi) {
          $scope.gridApi = gridApi;
 
-         filterVar = '';
-         console.log(gridApi.grid.columns)
-         for (var col in gridApi.grid.columns) {
-            console.log(col)
-            if (gridApi.grid.columns[col].filters[0].term != null) {
-               filterVar += '&filter[' + gridApi.grid.columns[col].field + ']=' + gridApi.grid.columns[col].filters[0].term;
-            }
-         }
-
          // Sorting
          $scope.gridApi.core.on.sortChanged($scope, function(grid, sortColumns) {
             if (sortColumns.length == 0) {
@@ -73,7 +121,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
                paginationOptions.sort = sortColumns[0].sort.direction;
                paginationOptions.sortField = sortColumns[0].field;
             }
-            $scope.getPage();
+            $scope.getPage(gridApi);
          });
 
 
@@ -82,20 +130,20 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
             paginationOptions.pageNumber = newPage;
             paginationOptions.pageSize = pageSize;
             pageSettings = '?pageNumber=' + newPage + '&pageSize=' + pageSize;
-            $scope.getPage();
+            $scope.getPage(gridApi);
          });
 
 
          // Filtering
          $scope.gridApi.core.on.filterChanged($scope, function() {
-            var grid = this.grid;
-            filterVar = '';
-            for (var col in grid.columns) {
-               if (grid.columns[col].filters[0].term != null) {
-                  filterVar += '&filter[' + grid.columns[col].field + ']=' + grid.columns[col].filters[0].term;
-               }
+
+            if (angular.isDefined($scope.filterTimeout)) {
+               clearTimeout($scope.filterTimeout);
             }
-            $scope.getPage();
+
+            $scope.filterTimeout = setTimeout(function() {
+               $scope.getPage(gridApi);
+            }, 500);
          });
 
 
@@ -107,6 +155,8 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
                for (var index in data.data) {
                   rowEntity[index] = data.data[index];
                   $scope.lastCellEdited = 'edited row id: ' + rowEntity._id + ' - Column: ' + colDef.name + ' - newValue: ' + newValue + ' - oldValue: ' + oldValue;
+
+
                   $timeout(function() {
                      $scope.$apply()
                   });
@@ -119,65 +169,71 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', fu
    };
 
 
-   $scope.getPage = function(clear) {
 
-      if (clear == true) {
-         pageSettings = '?pageNumber=' + 1 + '&pageSize=' + $scope.gridOptions.paginationPageSize;
-         filterVar = '';
+   $scope.getPage = function(gridApi) {
+
+
+      var filterStr = ''
+      var grid = gridApi ? gridApi.grid : null;
+
+      var allFilter = {};
+
+      for (var index in $location.search()) {
+         if (modelSchema[$scope.modelSelected].fields[index]) {
+            allFilter[index] = $location.search()[index];
+         } else if (index !== 'moosadminModel') {
+            $location.search(index, null)
+         }
       }
 
-      // Temporary 
-      var query = parseQuery(window.location.search);
-      if (query._id) {
-         filterVar += '&filter[_id]=' + query._id;
+      if (grid) {
+
+         for (var col in grid.columns) {
+            if (grid.columns[col].filters[0].term != null && grid.columns[col].filters[0].term != '') {
+               allFilter[grid.columns[col].field] = grid.columns[col].filters[0].term;
+            }
+         }
       }
 
-      var url = '/api/';
+      for (var key in allFilter) {
+         filterStr += '&filter[' + key + ']=' + allFilter[key];
+
+      }
+
+
+
+      var url = '/api/' + $scope.modelSelected + pageSettings + filterStr;
       switch (paginationOptions.sort) {
          case uiGridConstants.ASC:
-            url += $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=1';
+            url += '&sort=' + paginationOptions.sortField + '&order=1';
             break;
          case uiGridConstants.DESC:
-            url += $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=-1';
+            url += '&sort=' + paginationOptions.sortField + '&order=-1';
             break;
          default:
-            url += $scope.modelSelected + pageSettings + filterVar;
+
             break;
       }
 
       $http.get(url).success(function(data) {
 
          // Creating columDefs
-         $scope.gridOptions.columnDefs = [];
 
-         for (var key in modelSchema[$scope.modelSelected].fields) {
-
-            var column = {
-               name: key,
-               width: 150
-            };
-            var query = parseQuery(window.location.search);
-            if (query._id && key === '_id') {
-               column.filter = {
-                  term: query._id
-               }
-            }
-            if (key == noCellEdit.id || key == noCellEdit.v) {
-               column.enableCellEdit = false;
-
-            }
-            if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID') {
-               column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + modelSchema[$scope.modelSelected].fields[key].refType + '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
-            }
-            if (key === '_id') {
-               $scope.gridOptions.columnDefs.unshift(column)
-            } else {
-               $scope.gridOptions.columnDefs.push(column)
-            }
-         }
          $scope.gridOptions.totalItems = data.count;
          $scope.gridOptions.data = data.docs;
          $scope.show = true;
+
+         var grid = gridApi ? gridApi.grid : null;
+
+         if (grid) {
+
+            for (var col in grid.columns) {
+               if (grid.columns[col].filters[0].term != null && grid.columns[col].filters[0].term != '') {
+                  // filterStr += '&filter[' + grid.columns[col].field + ']=' + grid.columns[col].filters[0].term;
+                  $location.search(grid.columns[col].field, grid.columns[col].filters[0].term)
+               }
+            }
+         }
       });
    };
 }]);
