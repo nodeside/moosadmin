@@ -12,7 +12,6 @@ We have just released our first version and are in the processes of preparing a 
 Features
 -------------
 
-
 > **Current:**
 
 > - Auto list models
@@ -21,13 +20,13 @@ Features
 > - Quick links to reference documents
 > - Standalone server or express middleware
 
+![Moosadmin Overview](https://nodeside.com/images/moosadmin-features.jpg)
+
 Installing
 -------------
 ```
 npm install moosadmin
 ```
-
-
 
 > **Note:** Use with caution. The project is still under active development:
 
@@ -42,7 +41,6 @@ var moosadmin = require('moosadmin',{server:true, port:3006});
 moosadmin.buildModelData(require('mongoose'));
 
 ```
-
 
 
 ### Express Middleware
