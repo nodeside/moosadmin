@@ -20,7 +20,7 @@ Features
 > - Quick links to reference documents
 > - Standalone server or express middleware
 
-![Moosadmin Overview](https://nodeside.com/images/moosadmin-features.jpg)
+![Moosadmin Overview](https://cloud.githubusercontent.com/assets/1487759/20528920/c4209e12-b0d6-11e6-919b-0b1674f548d0.jpg)
 
 Installing
 -------------
