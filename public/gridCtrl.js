@@ -1,76 +1,150 @@
+// app.directive('filterDropdown', function() {
+//    return {
+//       restrict: 'A',
+//       template: `<select 
+//          class="form-control" 
+//          ng-model="filters[data.field]" 
+//          ng-change="filterChanged()" 
+//          ng-options="option.id as option.value for option in data.options"></select>`,
+//       controller: function($scope) {
+//          $scope.filters = {};
+//          $scope.filterChanged = function() {
+//             console.log($scope.filters)
+//          }
+//       },
+//       scope: {
+//          data: '=data'
+//       },
+//    };
+// })
+
+app.directive('filterText', function() {
+   return {
+      restrict: 'A',
+      template: `<input 
+         class="form-control" 
+         ng-model="filters[data.field]" 
+         ng-change="filterChanged()"/>`,
+      controller: function($scope, $location) {
+         $scope.filters = {};
+
+
+         if ($location.search()[$scope.data.field]) {
+            $scope.filters[$scope.data.field] = $location.search()[$scope.data.field]
+         }
+
+         $scope.filterChanged = function() {
+
+            for (var filter in $scope.filters) {
+               $location.search(filter, $scope.filters[filter]);
+            }
+         }
+      },
+      scope: {
+         data: '=data'
+      },
+   };
+})
+
 app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$stateParams', '$location', '$rootScope', function($scope, $http, $timeout, uiGridConstants, $stateParams, $location, $rootScope) {
 
    var Grid = this;
 
    var modelNames = [];
    var modelSchema = {};
+
    $scope.show = false;
 
-   var defaultColumn = {
-      name: '_id',
-      width: 150,
-      filter: {}
-   }
    var paginationOptions = {
       pageNumber: 1,
       pageSize: 5,
       sort: null
    };
 
+   $rootScope.$on('$locationChangeSuccess', function(event) {
+
+      if ($location.search().moosadminModel && $location.search().moosLink) {
+
+         $scope.modelSelected = $location.search().moosadminModel;
+
+         $location.search({
+            moosadminModel: $scope.modelSelected,
+            _id: $location.search()._id
+         });
+
+      }
+
+      if (angular.isDefined($scope.filterTimeout)) {
+         clearTimeout($scope.filterTimeout);
+      }
+
+      $scope.filterTimeout = setTimeout(function() {
+         console.log('location changed')
+         setColumnsAndFilters();
+         $scope.getPage();
+      }, 500);
+
+
+
+   });
+
+
    $scope.changeModel = function() {
       $location.search({
          'moosadminModel': $scope.modelSelected
       });
 
-      setColumnsAndFilters();
-      $scope.getPage();
+      // setColumnsAndFilters();
+      // $scope.getPage();
    }
 
    function setColumnsAndFilters() {
       $scope.gridOptions.columnDefs = [];
       for (var key in modelSchema[$scope.modelSelected].fields) {
 
+         // Setting default column width and name
          var column = {
             name: key,
             width: 150
          };
 
-         //         console.log(key)
 
-         if ($location.search()[key] && modelSchema[$scope.modelSelected].fields[key]) {
-            column.filter = {
-               term: $location.search()[key]
-            }
+         // Setting the filter values based on the url querystring if the field exists in the model
+
+
+         //            column.filterHeaderTemplate = `<div class="ui-grid-filter-container"><div filter-dropdown data="{field:'gender', options:[{value:'Male', id:'male'},{value:'feMale', id:'female'}]}"></div></div>`;
+
+         switch (modelSchema[$scope.modelSelected].fields[key].dataType) {
+            default: column.filterHeaderTemplate = `
+               <div class="ui-grid-filter-container">
+                  <div filter-text data="{field:'${key}'}"></div>
+               </div>`;
+            break;
          }
+
+
+         // Prevent editing got certain fields
          if (key == noCellEdit.id || key == noCellEdit.v) {
             column.enableCellEdit = false;
 
          }
+
+         // Making a link if it is an object id
          if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID' && modelSchema[$scope.modelSelected].fields[key].refType) {
             column.cellTemplate = `<div ui-sref-opts="{inherit: false}" ui-sref="grid({ moosLink:true, moosadminModel: '${modelSchema[$scope.modelSelected].fields[key].refType}', _id:'{{COL_FIELD}}' }) " class="ui-grid-cell-contents">${modelSchema[$scope.modelSelected].fields[key].refType}: <a href="#">{{COL_FIELD}}</a></div>`;
             column.width = 200;
          }
+
+         // Ensuring _id is always the first column
          if (key === '_id') {
             $scope.gridOptions.columnDefs.unshift(column)
          } else {
-            console.log(column)
             $scope.gridOptions.columnDefs.push(column)
          }
       }
 
    }
 
-   // $rootScope.$on('$locationChangeSuccess', function(event) {
-
-   //    if ($location.search().moosadminModel && $location.search().moosLink) {
-   //       $scope.modelSelected = $location.search().moosadminModel;
-   //       setColumnsAndFilters();
-   //       $scope.getPage();
-   //    }
-
-
-
-   // });
 
 
    var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
@@ -108,7 +182,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
       useExternalFiltering: true,
       enableColumnResizing: true,
       enableCellEdit: true,
-      columnDefs: [defaultColumn],
 
       onRegisterApi: function(gridApi) {
          $scope.gridApi = gridApi;
@@ -132,20 +205,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             pageSettings = '?pageNumber=' + newPage + '&pageSize=' + pageSize;
             $scope.getPage(gridApi);
          });
-
-
-         // Filtering
-         // $scope.gridApi.core.on.filterChanged($scope, function() {
-
-         //    if (angular.isDefined($scope.filterTimeout)) {
-         //       clearTimeout($scope.filterTimeout);
-         //    }
-
-         //    $scope.filterTimeout = setTimeout(function() {
-         //       $scope.getPage(gridApi);
-         //    }, 500);
-         // });
-
 
          // Editing
          gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
