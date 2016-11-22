@@ -23,6 +23,11 @@ module.exports = function(options) {
 
 	// Exposing static files for the front end
 	Router.use(express.static(path.join(__dirname, 'public')));
+
+	Router.use('/angular', express.static(path.join(__dirname, 'node_modules/angular')));
+	Router.use('/ngtouch', express.static(path.join(__dirname, 'node_modules/ngtouch')));
+	Router.use('/angular-ui-router', express.static(path.join(__dirname, 'node_modules/angular-ui-router')));
+	Router.use('/angular-ui-grid', express.static(path.join(__dirname, 'node_modules/angular-ui-grid')));
 	Router.use('/angular-ui-bootstrap', express.static(path.join(__dirname, 'node_modules/angular-ui-bootstrap/dist')));
 	Router.use('/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
 

@@ -17,6 +17,7 @@
 //       },
 //    };
 // })
+var app = angular.module('moosadmin');
 
 app.directive('filterText', function() {
    return {
@@ -66,7 +67,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
    // Default pagination options
    var paginationOptions = {
       pageNumber: 1,
-      pageSize: 5,
+      pageSize: 75,
       sort: null
    };
 
@@ -188,8 +189,8 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
 
    $scope.gridOptions = {
-      paginationPageSizes: [5, 25, 50, 75],
-      paginationPageSize: 5,
+      paginationPageSizes: [5, 25, 50, 75,150],
+      paginationPageSize: 75,
       useExternalPagination: true,
       useExternalSorting: true,
       enableFiltering: true,
