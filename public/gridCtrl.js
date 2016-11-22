@@ -60,17 +60,17 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
    }
 
-   $rootScope.$on('$locationChangeSuccess', function(event) {
+   // $rootScope.$on('$locationChangeSuccess', function(event) {
 
-      if ($location.search().moosadminModel && $location.search().moosLink) {
-         $scope.modelSelected = $location.search().moosadminModel;
-         setColumnsAndFilters();
-         $scope.getPage();
-      }
+   //    if ($location.search().moosadminModel && $location.search().moosLink) {
+   //       $scope.modelSelected = $location.search().moosadminModel;
+   //       setColumnsAndFilters();
+   //       $scope.getPage();
+   //    }
 
 
 
-   });
+   // });
 
 
    var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
@@ -82,7 +82,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
    var init = function() {
 
-      $http.get('/api').then(function(res) {
+      $http.get('api').then(function(res) {
          modelSchema = res.data;
          for (var name in res.data) {
             modelNames.push(name);
@@ -135,23 +135,23 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
 
          // Filtering
-         $scope.gridApi.core.on.filterChanged($scope, function() {
+         // $scope.gridApi.core.on.filterChanged($scope, function() {
 
-            if (angular.isDefined($scope.filterTimeout)) {
-               clearTimeout($scope.filterTimeout);
-            }
+         //    if (angular.isDefined($scope.filterTimeout)) {
+         //       clearTimeout($scope.filterTimeout);
+         //    }
 
-            $scope.filterTimeout = setTimeout(function() {
-               $scope.getPage(gridApi);
-            }, 500);
-         });
+         //    $scope.filterTimeout = setTimeout(function() {
+         //       $scope.getPage(gridApi);
+         //    }, 500);
+         // });
 
 
          // Editing
          gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
             var updateData = {};
             updateData[colDef.name] = newValue;
-            $http.put('/api/' + $scope.modelSelected + '/' + rowEntity._id, updateData).then(function(data) {
+            $http.put('api/' + $scope.modelSelected + '/' + rowEntity._id, updateData).then(function(data) {
                for (var index in data.data) {
                   rowEntity[index] = data.data[index];
                   $scope.lastCellEdited = 'edited row id: ' + rowEntity._id + ' - Column: ' + colDef.name + ' - newValue: ' + newValue + ' - oldValue: ' + oldValue;
@@ -202,7 +202,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
 
 
-      var url = '/api/' + $scope.modelSelected + pageSettings + filterStr;
+      var url = 'api/' + $scope.modelSelected + pageSettings + filterStr;
       switch (paginationOptions.sort) {
          case uiGridConstants.ASC:
             url += '&sort=' + paginationOptions.sortField + '&order=1';

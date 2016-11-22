@@ -30,8 +30,8 @@
   "gitHead": "7e27103a31d94fec28b502d667d20ddeec2ce1fa",
   "readme": "# moosadmin\n",
   "readmeFilename": "README.md",
-  "_id": "moosadmin@1.0.0",
-  "_shasum": "74d1be0862d183aff0d986664b3f38479436112f",
-  "_from": "git+https://github.com/nodeside/moosadmin.git",
+  "_id": "moosadmin@1.0.1",
+  "_shasum": "adacb85192199113d9013cb5e350998266efbef3",
+  "_from": "moosadmin@latest",
   "_resolved": "git+https://github.com/nodeside/moosadmin.git#c11d5c934a4f00dfe2a80d2ac53f564ca2cb7e06"
 }
