@@ -25,47 +25,95 @@ app.directive('filterText', function() {
          class="form-control" 
          ng-model="filters[data.field]" 
          ng-change="filterChanged()"/>`,
-      controller: function($scope, $location) {
-         $scope.filters = {};
-
-
-         if ($location.search()[$scope.data.field]) {
-            $scope.filters[$scope.data.field] = $location.search()[$scope.data.field]
-         }
-
-         $scope.filterChanged = function() {
-
-            for (var filter in $scope.filters) {
-               $location.search(filter, $scope.filters[filter]);
-            }
-         }
-      },
+      controller: 'FilterCtrl',
       scope: {
          data: '=data'
       },
    };
 })
 
-app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$stateParams', '$location', '$rootScope', function($scope, $http, $timeout, uiGridConstants, $stateParams, $location, $rootScope) {
+app.controller('FilterCtrl', ['$scope', '$location', '$rootScope', function($scope, $location, $rootScope) {
+   var query = $location.search();
+   $scope.filters = {};
 
-   var Grid = this;
+   // If url contains our field set the model to its value
+   if (query[$scope.data.field]) {
+      $scope.filters[$scope.data.field] = query[$scope.data.field];
+   }
+
+   // If a filter is changed we update the url
+   $scope.filterChanged = function() {
+      $location.search($scope.data.field, $scope.filters[$scope.data.field]);
+   }
+
+   $rootScope.$on('$locationChangeSuccess', function(event) {
+
+      var query = $location.search();
+
+      // Update field values based on the url
+      if (query[$scope.data.field]) {
+         $scope.filters[$scope.data.field] = query[$scope.data.field];
+      }
+
+   });
+
+}])
+
+app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$stateParams', '$location', '$rootScope', function($scope, $http, $timeout, uiGridConstants, $stateParams, $location, $rootScope) {
 
    var modelNames = [];
    var modelSchema = {};
-
-   $scope.show = false;
-
+   // Default pagination options
    var paginationOptions = {
       pageNumber: 1,
       pageSize: 5,
       sort: null
    };
 
+   var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
+
+   var noCellEdit = {
+      id: '_id',
+      v: '__v'
+   }
+
+   $scope.show = false;
+
+   // Loading all the model data
+
+   (function() {
+
+      $http.get('api').then(function(res) {
+         modelSchema = res.data;
+         for (var name in res.data) {
+            modelNames.push(name);
+         }
+
+         $scope.models = modelNames;
+
+         var query = $location.search();
+         // If we have a model and it is a valid model name we set that as the selected model
+         if (query.moosadminModel && modelNames.indexOf(query.moosadminModel) !== -1) {
+            $scope.modelSelected = query.moosadminModel;
+
+            // Define columns
+            setColumnsAndFilters();
+
+            // Make the query
+            console.log('First getPage')
+            $scope.getPage();
+         }
+      });
+   })()
+
+
    $rootScope.$on('$locationChangeSuccess', function(event) {
 
-      if ($location.search().moosadminModel && $location.search().moosLink) {
+      var query = $location.search();
+      // If a link was clicked we need to clear all query params
+      if (query.moosadminModel && query.moosLink) {
 
-         $scope.modelSelected = $location.search().moosadminModel;
+         $scope.modelSelected = query.moosadminModel;
 
          $location.search({
             moosadminModel: $scope.modelSelected,
@@ -84,22 +132,20 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
          $scope.getPage();
       }, 500);
 
-
-
    });
 
-
+   // Changing the model changes the url
    $scope.changeModel = function() {
       $location.search({
          'moosadminModel': $scope.modelSelected
       });
-
-      // setColumnsAndFilters();
-      // $scope.getPage();
    }
 
    function setColumnsAndFilters() {
+      // Defining columns as empty
       $scope.gridOptions.columnDefs = [];
+
+      // Looping through all fields in the model
       for (var key in modelSchema[$scope.modelSelected].fields) {
 
          // Setting default column width and name
@@ -107,12 +153,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             name: key,
             width: 150
          };
-
-
-         // Setting the filter values based on the url querystring if the field exists in the model
-
-
-         //            column.filterHeaderTemplate = `<div class="ui-grid-filter-container"><div filter-dropdown data="{field:'gender', options:[{value:'Male', id:'male'},{value:'feMale', id:'female'}]}"></div></div>`;
 
          switch (modelSchema[$scope.modelSelected].fields[key].dataType) {
             default: column.filterHeaderTemplate = `
@@ -146,32 +186,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
    }
 
 
-
-   var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
-
-   var noCellEdit = {
-      id: '_id',
-      v: '__v'
-   }
-
-   var init = function() {
-
-      $http.get('api').then(function(res) {
-         modelSchema = res.data;
-         for (var name in res.data) {
-            modelNames.push(name);
-         }
-         $scope.models = modelNames;
-         if ($location.search().moosadminModel && modelNames.indexOf($location.search().moosadminModel) !== -1) {
-            $scope.modelSelected = $location.search().moosadminModel;
-            setColumnsAndFilters();
-            $scope.getPage();
-
-         }
-      });
-   }
-
-   init();
 
    $scope.gridOptions = {
       paginationPageSizes: [5, 25, 50, 75],
@@ -231,35 +245,26 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
    $scope.getPage = function(gridApi) {
 
+      var allFilters = {};
 
-      var filterStr = ''
-      var grid = gridApi ? gridApi.grid : null;
+      var query = $location.search();
 
-      var allFilter = {};
-
-      for (var index in $location.search()) {
-         if (modelSchema[$scope.modelSelected].fields[index]) {
-            allFilter[index] = $location.search()[index];
-         } else if (index !== 'moosadminModel') {
+      for (var field in query) {
+         // If the query in the url matches a valid field
+         if (modelSchema[$scope.modelSelected].fields[field]) {
+            // Add the query to our allFilter
+            allFilters[field] = query[field];
+         } else if (field !== 'moosadminModel') {
+            // If we have an invalid query we remove it
             $location.search(index, null)
          }
       }
 
-      if (grid) {
-
-         for (var col in grid.columns) {
-            if (grid.columns[col].filters[0].term != null && grid.columns[col].filters[0].term != '') {
-               allFilter[grid.columns[col].field] = grid.columns[col].filters[0].term;
-            }
-         }
+      // Building up the filters into a querystring
+      var filterStr = ''
+      for (var key in allFilters) {
+         filterStr += '&filter[' + key + ']=' + allFilters[key];
       }
-
-      for (var key in allFilter) {
-         filterStr += '&filter[' + key + ']=' + allFilter[key];
-
-      }
-
-
 
       var url = 'api/' + $scope.modelSelected + pageSettings + filterStr;
       switch (paginationOptions.sort) {
@@ -274,36 +279,11 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             break;
       }
 
+      // Get the actual data from the api
       $http.get(url).success(function(data) {
-
-         // Creating columDefs
-
+         $scope.show = true;
          $scope.gridOptions.totalItems = data.count;
          $scope.gridOptions.data = data.docs;
-         $scope.show = true;
-
-         var grid = gridApi ? gridApi.grid : null;
-
-         if (grid) {
-
-            for (var col in grid.columns) {
-               if (grid.columns[col].filters[0].term != null && grid.columns[col].filters[0].term != '') {
-                  // filterStr += '&filter[' + grid.columns[col].field + ']=' + grid.columns[col].filters[0].term;
-                  $location.search(grid.columns[col].field, grid.columns[col].filters[0].term)
-               }
-            }
-         }
       });
    };
 }]);
-
-
-function parseQuery(qstr) {
-   var query = {};
-   var a = qstr.substr(1).split('&');
-   for (var i = 0; i < a.length; i++) {
-      var b = a[i].split('=');
-      query[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
-   }
-   return query;
-}
