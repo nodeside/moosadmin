@@ -1,17 +1,12 @@
 <div>
-
-   <div class="row">
-     <div class="col-md-3">
+   <div>
       <label for="selectModel"> Select Model: </label>
-      <select class="form-control" name="selectModel" id="selectModel" ng-model="modelSelected" ng-change="changeModel()">
+      <select name="selectModel" id="selectModel" ng-model="modelSelected" ng-click="getPage(true)">
          <option ng-repeat="model in models" value="{{model}}">{{model}}</option>
       </select>
-     </div>
-     
    </div>
-
-   <strong>Results:</strong> {{ gridOptions.data.length | number }}<br/>
-   <strong>Last Edit:</strong> {{lastCellEdited}}<br/>
+   <strong>Data Length:</strong> {{ gridOptions.data.length | number }}<br/>
+   <strong>Last Cell Edited:</strong> {{lastCellEdited}}<br/>
    <div ui-grid="gridOptions" class="grid" ng-if="show"
          ui-grid-pagination  
          ui-grid-resize-columns 
