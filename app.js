@@ -10,19 +10,47 @@ var mongoose;
 
 var app = express();
 
-module.exports = function(mng, options) {
+var Router = express.Router();
+module.exports = function(options) {
 
+	options = options || {};
+
+	Router.use(bodyParser.json());
+	// Require and create routing based on the Models
+	Router.get('/api', function(req, res) {
+		res.send(Models);
+	});
+
+	// Exposing static files for the front end
+	Router.use(express.static(path.join(__dirname, 'public')));
+
+	Router.use('/angular', express.static(path.join(__dirname, 'node_modules/angular')));
+	Router.use('/ngtouch', express.static(path.join(__dirname, 'node_modules/ngtouch')));
+	Router.use('/angular-ui-router', express.static(path.join(__dirname, 'node_modules/angular-ui-router')));
+	Router.use('/angular-ui-grid', express.static(path.join(__dirname, 'node_modules/angular-ui-grid')));
+	Router.use('/angular-ui-bootstrap', express.static(path.join(__dirname, 'node_modules/angular-ui-bootstrap/dist')));
+	Router.use('/bootstrap', express.static(path.join(__dirname, 'node_modules/bootstrap/dist')));
+
+	if (options.port || options.server) {
+		app.use(Router);
+		app.listen(options.port || 3006);
+		console.log('Moosadmin is listening on port: ' + (options.port || 3006));
+	}
+
+	return {
+		expressMiddleware: Router,
+		buildModelData: buildModelData
+	}
+
+}
+
+function buildModelData(mng) {
+	
 	// Defining out local mongoose to equal that of the app
 	mongoose = mng;
 
 	// Looping over models and creatin key value object
 	buildKeyValueModelData(mongoose.models);
-
-	app.use(bodyParser.json());
-	// Require and create routing based on the Models
-	app.get('/api', function(req, res) {
-		res.send(Models);
-	});
 
 	// Loop over model and inject various crud methods
 	for (var model in Models) {
@@ -30,11 +58,6 @@ module.exports = function(mng, options) {
 		injectPut(model);
 	}
 
-	// Exposing static files for the front end
-	app.use(express.static(path.join(__dirname, 'public')));
-
-	app.listen(options.port || 3006);
-	console.log('Moosadmin is listening on port: ' + (options.port || 3006));
 }
 
 function buildKeyValueModelData(models) {
@@ -74,7 +97,7 @@ function buildKeyValueModelData(models) {
 
 function injectGet(model) {
 
-	app.get('/api/' + model + '/:id?', function(req, res, next) {
+	Router.get('/api/' + model + '/:id?', function(req, res, next) {
 		var Model = mongoose.model(model);
 		var Query = Model.find({}, {});
 		var Count = Model.count();
@@ -130,11 +153,11 @@ function injectGet(model) {
 								Query.where(name, req.query.filter[name]);
 							}
 							break;
-						case 'Number':	
+						case 'Number':
 						case 'Boolean':
-								Count.where(name, req.query.filter[name]);
-								Query.where(name, req.query.filter[name]);
-							
+							Count.where(name, req.query.filter[name]);
+							Query.where(name, req.query.filter[name]);
+
 							break;
 
 						default:
@@ -173,7 +196,7 @@ function injectGet(model) {
 }
 
 function injectPut(model) {
-	app.put('/api/' + model + '/:id', function(req, res, next) {
+	Router.put('/api/' + model + '/:id', function(req, res, next) {
 		var Model = mongoose.model(model);
 
 
