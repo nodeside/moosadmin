@@ -1,4 +1,4 @@
-var app = angular.module('moosadmin', ['ui.bootstrap', 'ngTouch', 'ui.router', 'ui.grid',
+var app = angular.module('moosadmin', ['ngTouch', 'ui.router', 'ui.grid',
    'ui.grid.pagination',
    'ui.grid.resizeColumns',
    'ui.grid.moveColumns',
@@ -12,11 +12,8 @@ app.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $ur
 
    $stateProvider
       .state('grid', {
-         url: '/grid?moosadminModel&_id&moosLink',
-         templateUrl: 'templates/grid.html',
-         controller: 'GridCtrl',
-         controllerAs: 'Grid',
-         reloadOnSearch: false
-
+         url: '/grid',
+         templateUrl: '/templates/grid.html',
+         controller: 'GridCtrl'
       });
 }]);

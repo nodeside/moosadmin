@@ -1,205 +1,69 @@
-// app.directive('filterDropdown', function() {
-//    return {
-//       restrict: 'A',
-//       template: `<select 
-//          class="form-control" 
-//          ng-model="filters[data.field]" 
-//          ng-change="filterChanged()" 
-//          ng-options="option.id as option.value for option in data.options"></select>`,
-//       controller: function($scope) {
-//          $scope.filters = {};
-//          $scope.filterChanged = function() {
-//             console.log($scope.filters)
-//          }
-//       },
-//       scope: {
-//          data: '=data'
-//       },
-//    };
-// })
-var app = angular.module('moosadmin');
-
-app.directive('filterText', function() {
-   return {
-      restrict: 'A',
-      template: `<input 
-         class="form-control" 
-         ng-model="filters[data.field]" 
-         ng-change="filterChanged()"/>`,
-      controller: 'FilterCtrl',
-      scope: {
-         data: '=data'
-      },
-   };
-})
-
-app.controller('FilterCtrl', ['$scope', '$location', '$rootScope', function($scope, $location, $rootScope) {
-   var query = $location.search();
-   $scope.filters = {};
-
-   // If url contains our field set the model to its value
-   if (query[$scope.data.field]) {
-      $scope.filters[$scope.data.field] = query[$scope.data.field];
-   }
-
-   // If a filter is changed we update the url
-   $scope.filterChanged = function() {
-      $location.search($scope.data.field, $scope.filters[$scope.data.field]);
-   }
-
-   $rootScope.$on('$locationChangeSuccess', function(event) {
-
-      var query = $location.search();
-
-      // Update field values based on the url
-      if (query[$scope.data.field]) {
-         $scope.filters[$scope.data.field] = query[$scope.data.field];
-      }
-
-   });
-
-}])
-
-app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$stateParams', '$location', '$rootScope', function($scope, $http, $timeout, uiGridConstants, $stateParams, $location, $rootScope) {
+app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', function($scope, $http, $timeout, uiGridConstants) {
 
    var modelNames = [];
    var modelSchema = {};
-   // Default pagination options
+   $scope.show = false;
+
+   var defaultColumn = {
+      name: '_id',
+      width: 150,
+      filter: {}
+   }
    var paginationOptions = {
       pageNumber: 1,
-      pageSize: 75,
+      pageSize: 5,
       sort: null
    };
-
    var pageSettings = '?pageNumber=' + paginationOptions.pageNumber + '&pageSize=' + paginationOptions.pageSize;
-
+   var filterVar = '';
    var noCellEdit = {
       id: '_id',
       v: '__v'
    }
 
-   $scope.show = false;
-
-   // Loading all the model data
-
-   (function() {
-
-      $http.get('api').then(function(res) {
+   var init = function() {
+      $http.get('/api').then(function(res) {
          modelSchema = res.data;
          for (var name in res.data) {
             modelNames.push(name);
          }
-
          $scope.models = modelNames;
 
-         var query = $location.search();
-         // If we have a model and it is a valid model name we set that as the selected model
-         if (query.moosadminModel && modelNames.indexOf(query.moosadminModel) !== -1) {
-            $scope.modelSelected = query.moosadminModel;
+         //yes this is horrible and is only for the next few hours
 
-            // Define columns
-            setColumnsAndFilters();
+         var query = parseQuery(window.location.search);
 
-            // Make the query
-            console.log('First getPage')
+         if (query.model) {
+            $scope.modelSelected = query.model
             $scope.getPage();
          }
-      });
-   })()
 
-
-   $rootScope.$on('$locationChangeSuccess', function(event) {
-
-      var query = $location.search();
-      // If a link was clicked we need to clear all query params
-      if (query.moosadminModel && query.moosLink) {
-
-         $scope.modelSelected = query.moosadminModel;
-
-         $location.search({
-            moosadminModel: $scope.modelSelected,
-            _id: $location.search()._id
-         });
-
-      }
-
-      if (angular.isDefined($scope.filterTimeout)) {
-         clearTimeout($scope.filterTimeout);
-      }
-
-      $scope.filterTimeout = setTimeout(function() {
-         console.log('location changed')
-         setColumnsAndFilters();
-         $scope.getPage();
-      }, 500);
-
-   });
-
-   // Changing the model changes the url
-   $scope.changeModel = function() {
-      $location.search({
-         'moosadminModel': $scope.modelSelected
       });
    }
-
-   function setColumnsAndFilters() {
-      // Defining columns as empty
-      $scope.gridOptions.columnDefs = [];
-
-      // Looping through all fields in the model
-      for (var key in modelSchema[$scope.modelSelected].fields) {
-
-         // Setting default column width and name
-         var column = {
-            name: key,
-            width: 150
-         };
-
-         switch (modelSchema[$scope.modelSelected].fields[key].dataType) {
-            default: column.filterHeaderTemplate = `
-               <div class="ui-grid-filter-container">
-                  <div filter-text data="{field:'${key}'}"></div>
-               </div>`;
-            break;
-         }
-
-
-         // Prevent editing got certain fields
-         if (key == noCellEdit.id || key == noCellEdit.v) {
-            column.enableCellEdit = false;
-
-         }
-
-         // Making a link if it is an object id
-         if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID' && modelSchema[$scope.modelSelected].fields[key].refType) {
-            column.cellTemplate = `<div ui-sref-opts="{inherit: false}" ui-sref="grid({ moosLink:true, moosadminModel: '${modelSchema[$scope.modelSelected].fields[key].refType}', _id:'{{COL_FIELD}}' }) " class="ui-grid-cell-contents">${modelSchema[$scope.modelSelected].fields[key].refType}: <a href="#">{{COL_FIELD}}</a></div>`;
-            column.width = 200;
-         }
-
-         // Ensuring _id is always the first column
-         if (key === '_id') {
-            $scope.gridOptions.columnDefs.unshift(column)
-         } else {
-            $scope.gridOptions.columnDefs.push(column)
-         }
-      }
-
-   }
-
-
+   init();
 
    $scope.gridOptions = {
-      paginationPageSizes: [5, 25, 50, 75,150],
-      paginationPageSize: 75,
+      paginationPageSizes: [5, 25, 50, 75],
+      paginationPageSize: 5,
       useExternalPagination: true,
       useExternalSorting: true,
       enableFiltering: true,
       useExternalFiltering: true,
       enableColumnResizing: true,
       enableCellEdit: true,
+      columnDefs: [defaultColumn],
 
       onRegisterApi: function(gridApi) {
          $scope.gridApi = gridApi;
+
+         filterVar = '';
+         console.log(gridApi.grid.columns)
+         for (var col in gridApi.grid.columns) {
+            console.log(col)
+            if (gridApi.grid.columns[col].filters[0].term != null) {
+               filterVar += '&filter[' + gridApi.grid.columns[col].field + ']=' + gridApi.grid.columns[col].filters[0].term;
+            }
+         }
 
          // Sorting
          $scope.gridApi.core.on.sortChanged($scope, function(grid, sortColumns) {
@@ -209,7 +73,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
                paginationOptions.sort = sortColumns[0].sort.direction;
                paginationOptions.sortField = sortColumns[0].field;
             }
-            $scope.getPage(gridApi);
+            $scope.getPage();
          });
 
 
@@ -218,19 +82,31 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             paginationOptions.pageNumber = newPage;
             paginationOptions.pageSize = pageSize;
             pageSettings = '?pageNumber=' + newPage + '&pageSize=' + pageSize;
-            $scope.getPage(gridApi);
+            $scope.getPage();
          });
+
+
+         // Filtering
+         $scope.gridApi.core.on.filterChanged($scope, function() {
+            var grid = this.grid;
+            filterVar = '';
+            for (var col in grid.columns) {
+               if (grid.columns[col].filters[0].term != null) {
+                  filterVar += '&filter[' + grid.columns[col].field + ']=' + grid.columns[col].filters[0].term;
+               }
+            }
+            $scope.getPage();
+         });
+
 
          // Editing
          gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue, oldValue) {
             var updateData = {};
             updateData[colDef.name] = newValue;
-            $http.put('api/' + $scope.modelSelected + '/' + rowEntity._id, updateData).then(function(data) {
+            $http.put('/api/' + $scope.modelSelected + '/' + rowEntity._id, updateData).then(function(data) {
                for (var index in data.data) {
                   rowEntity[index] = data.data[index];
                   $scope.lastCellEdited = 'edited row id: ' + rowEntity._id + ' - Column: ' + colDef.name + ' - newValue: ' + newValue + ' - oldValue: ' + oldValue;
-
-
                   $timeout(function() {
                      $scope.$apply()
                   });
@@ -243,48 +119,76 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
    };
 
 
+   $scope.getPage = function(clear) {
 
-   $scope.getPage = function(gridApi) {
-
-      var allFilters = {};
-
-      var query = $location.search();
-
-      for (var field in query) {
-         // If the query in the url matches a valid field
-         if (modelSchema[$scope.modelSelected].fields[field]) {
-            // Add the query to our allFilter
-            allFilters[field] = query[field];
-         } else if (field !== 'moosadminModel') {
-            // If we have an invalid query we remove it
-            $location.search(index, null)
-         }
+      if (clear == true) {
+         pageSettings = '?pageNumber=' + 1 + '&pageSize=' + $scope.gridOptions.paginationPageSize;
+         filterVar = '';
       }
 
-      // Building up the filters into a querystring
-      var filterStr = ''
-      for (var key in allFilters) {
-         filterStr += '&filter[' + key + ']=' + allFilters[key];
+      // Temporary 
+      var query = parseQuery(window.location.search);
+      if (query._id) {
+         filterVar += '&filter[_id]=' + query._id;
       }
 
-      var url = 'api/' + $scope.modelSelected + pageSettings + filterStr;
+      var url = '/api/';
       switch (paginationOptions.sort) {
          case uiGridConstants.ASC:
-            url += '&sort=' + paginationOptions.sortField + '&order=1';
+            url += $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=1';
             break;
          case uiGridConstants.DESC:
-            url += '&sort=' + paginationOptions.sortField + '&order=-1';
+            url += $scope.modelSelected + pageSettings + filterVar + '&sort=' + paginationOptions.sortField + '&order=-1';
             break;
          default:
-
+            url += $scope.modelSelected + pageSettings + filterVar;
             break;
       }
 
-      // Get the actual data from the api
       $http.get(url).success(function(data) {
-         $scope.show = true;
+
+         // Creating columDefs
+         $scope.gridOptions.columnDefs = [];
+
+         for (var key in modelSchema[$scope.modelSelected].fields) {
+
+            var column = {
+               name: key,
+               width: 150
+            };
+            var query = parseQuery(window.location.search);
+            if (query._id && key === '_id') {
+               column.filter = {
+                  term: query._id
+               }
+            }
+            if (key == noCellEdit.id || key == noCellEdit.v) {
+               column.enableCellEdit = false;
+
+            }
+            if (modelSchema[$scope.modelSelected].fields[key].dataType === 'ObjectID') {
+               column.cellTemplate = '<div class="ui-grid-cell-contents"><a href="?model=' + modelSchema[$scope.modelSelected].fields[key].refType + '&_id={{COL_FIELD}}">{{COL_FIELD}}</a></div>';
+            }
+            if (key === '_id') {
+               $scope.gridOptions.columnDefs.unshift(column)
+            } else {
+               $scope.gridOptions.columnDefs.push(column)
+            }
+         }
          $scope.gridOptions.totalItems = data.count;
          $scope.gridOptions.data = data.docs;
+         $scope.show = true;
       });
    };
 }]);
+
+
+function parseQuery(qstr) {
+   var query = {};
+   var a = qstr.substr(1).split('&');
+   for (var i = 0; i < a.length; i++) {
+      var b = a[i].split('=');
+      query[decodeURIComponent(b[0])] = decodeURIComponent(b[1] || '');
+   }
+   return query;
+}
