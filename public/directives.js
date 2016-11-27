@@ -9,6 +9,10 @@ app.directive('filterText', function() {
          ng-model="filters[data.field]" 
          ng-change="filterChanged()"/>`,
       controller: 'FilterCtrl',
+      require: 'GridCtrl',
+      link: function(scope, elem, attr) {
+
+      },
       scope: {
          data: '=data'
       },

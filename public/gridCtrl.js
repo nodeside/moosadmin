@@ -3,6 +3,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
       var modelNames = [];
       var modelSchema = {};
+      
       // Default pagination options
       var paginationOptions = {
          pageNumber: 1,
