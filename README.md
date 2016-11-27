@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Moosadmin!
 ===================
 
@@ -53,3 +54,6 @@ var moosadmin = require('moosadmin',{server:true, port:3006});
 app.use('/moosadmin', moosadmin.expressMiddleware);
 
 ```
+=======
+# moosadmin
+>>>>>>> 48eb19bf72d993194fa3d51e4147d46be11b1a9a

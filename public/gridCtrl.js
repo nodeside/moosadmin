@@ -40,7 +40,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
                setColumnsAndFilters();
 
                // Make the query
-               console.log('First getPage')
                $scope.getPage();
             }
          });
@@ -59,7 +58,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
                moosadminModel: $scope.modelSelected,
                _id: $location.search()._id
             });
-
          }
 
          if (angular.isDefined($scope.filterTimeout)) {
@@ -67,7 +65,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
          }
 
          $scope.filterTimeout = setTimeout(function() {
-            console.log('location changed')
             setColumnsAndFilters();
             $scope.getPage();
          }, 500);
