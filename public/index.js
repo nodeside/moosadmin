@@ -17,6 +17,5 @@ app.config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $ur
          controller: 'GridCtrl',
          controllerAs: 'Grid',
          reloadOnSearch: false
-
       });
 }]);

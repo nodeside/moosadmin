@@ -3,7 +3,6 @@ var Models = {};
 
 var express = require('express');
 var bodyParser = require('body-parser')
-
 var path = require('path')
 
 var mongoose;
@@ -41,7 +40,6 @@ module.exports = function(options) {
 		expressMiddleware: Router,
 		buildModelData: buildModelData
 	}
-
 }
 
 function buildModelData(mng) {
@@ -57,7 +55,6 @@ function buildModelData(mng) {
 		injectGet(model);
 		injectPut(model);
 	}
-
 }
 
 function buildKeyValueModelData(models) {
@@ -137,11 +134,9 @@ function injectGet(model) {
 
 		// Formatting filter
 
-
 		if (req.query.filter) {
 
 			for (var name in req.query.filter) {
-
 
 				if (Models[model].fields[name]) {
 
@@ -153,11 +148,11 @@ function injectGet(model) {
 								Query.where(name, req.query.filter[name]);
 							}
 							break;
+				
 						case 'Number':
 						case 'Boolean':
 							Count.where(name, req.query.filter[name]);
 							Query.where(name, req.query.filter[name]);
-
 							break;
 
 						default:
@@ -172,7 +167,6 @@ function injectGet(model) {
 							break;
 					}
 				}
-
 			}
 		}
 
@@ -206,7 +200,6 @@ function injectPut(model) {
 				error: true,
 				message: 'Missing id of document'
 			});
-
 		}
 
 		var set = objToDotNotation(req.body);
@@ -226,7 +219,6 @@ function injectPut(model) {
 
 			res.send(doc);
 		})
-
 	});
 }
 
