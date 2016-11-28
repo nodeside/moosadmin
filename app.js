@@ -151,6 +151,7 @@ function injectGet(model) {
 				
 						case 'Number':
 						case 'Boolean':
+						case 'Date':
 							Count.where(name, req.query.filter[name]);
 							Query.where(name, req.query.filter[name]);
 							break;

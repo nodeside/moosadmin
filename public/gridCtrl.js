@@ -3,7 +3,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
       var modelNames = [];
       var modelSchema = {};
-      
+
       // Default pagination options
       var paginationOptions = {
          pageNumber: 1,
@@ -77,6 +77,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
          $location.search({
             'moosadminModel': $scope.modelSelected
          });
+         $scope.gridOptions.columnDefs = [];
       }
 
       function setColumnsAndFilters() {
@@ -93,18 +94,30 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             };
 
             switch (modelSchema[$scope.modelSelected].fields[key].dataType) {
-               default: column.filterHeaderTemplate = `
+               case 'Date':
+                  column.filterHeaderTemplate = `
+               <div class="ui-grid-filter-container">
+                  <div filter-date data="{field:'${key}'}"></div>
+               </div>`;
+                  break;
+               case 'Number':
+                  column.filterHeaderTemplate = `
+               <div class="ui-grid-filter-container">
+                  <div filter-number data="{field:'${key}'}"></div>
+               </div>`;
+                  break;
+               default:
+                  column.filterHeaderTemplate = `
                <div class="ui-grid-filter-container">
                   <div filter-text data="{field:'${key}'}"></div>
                </div>`;
-               break;
+                  break;
             }
 
 
             // Prevent editing got certain fields
             if (key == noCellEdit.id || key == noCellEdit.v) {
                column.enableCellEdit = false;
-
             }
 
             // Making a link if it is an object id
@@ -185,7 +198,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
          for (var field in query) {
             // If the query in the url matches a valid field
-            if (modelSchema[$scope.modelSelected].fields[field] && query[field]) {
+            if (modelSchema[$scope.modelSelected].fields[field] && (query[field] || query[field] === 0)) {
                // Add the query to our allFilter
                allFilters[field] = query[field];
             } else if (field !== 'moosadminModel') {
