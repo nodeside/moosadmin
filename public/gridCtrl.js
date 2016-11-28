@@ -166,7 +166,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
                      rowEntity[index] = data.data[index];
                      $scope.lastCellEdited = 'edited row id: ' + rowEntity._id + ' - Column: ' + colDef.name + ' - newValue: ' + newValue + ' - oldValue: ' + oldValue;
 
-
                      $timeout(function() {
                         $scope.$apply()
                      });
