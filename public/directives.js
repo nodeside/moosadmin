@@ -15,6 +15,36 @@ app.directive('filterText', function() {
    };
 })
 
+app.directive('filterNumber', function() {
+   return {
+      restrict: 'A',
+      template: `<input 
+         type="number"
+         class="form-control" 
+         ng-model="filters[data.field]" 
+         ng-change="filterChanged()"/>`,
+      controller: 'FilterCtrl',
+      scope: {
+         data: '=data'
+      },
+   };
+})
+
+app.directive('filterDate', function() {
+   return {
+      restrict: 'A',
+      template: `<input 
+         type="text"
+         class="form-control" 
+         ng-model="filters[data.field]" 
+         ng-change="filterChanged()"/>`,
+      controller: 'FilterCtrl',
+      scope: {
+         data: '=data'
+      },
+   };
+})
+
 app.controller('FilterCtrl', ['$scope', '$location', '$rootScope', function($scope, $location, $rootScope) {
    var query = $location.search();
    $scope.filters = {};

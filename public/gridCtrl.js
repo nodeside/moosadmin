@@ -3,7 +3,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
       var modelNames = [];
       var modelSchema = {};
-      
+
       // Default pagination options
       var paginationOptions = {
          pageNumber: 1,
@@ -77,6 +77,9 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
          $location.search({
             'moosadminModel': $scope.modelSelected
          });
+
+         $scope.gridOptions.columnDefs = [];
+
       }
 
       function setColumnsAndFilters() {
@@ -93,11 +96,24 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             };
 
             switch (modelSchema[$scope.modelSelected].fields[key].dataType) {
-               default: column.filterHeaderTemplate = `
+               case 'Date':
+                  column.filterHeaderTemplate = `
+               <div class="ui-grid-filter-container">
+                  <div filter-date data="{field:'${key}'}"></div>
+               </div>`;
+                  break;
+               case 'Number':
+                  column.filterHeaderTemplate = `
+               <div class="ui-grid-filter-container">
+                  <div filter-number data="{field:'${key}'}"></div>
+               </div>`;
+                  break;
+               default:
+                  column.filterHeaderTemplate = `
                <div class="ui-grid-filter-container">
                   <div filter-text data="{field:'${key}'}"></div>
                </div>`;
-               break;
+                  break;
             }
 
 
