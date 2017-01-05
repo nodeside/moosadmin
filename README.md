@@ -33,7 +33,7 @@ npm install moosadmin
 
 ### Standalone server
 ```
-var moosadmin = require('moosadmin',{server:true, port:3006});
+var moosadmin = require('moosadmin')({server:true, port:3006});
 
 // Once all the models have been loaded call buildModelData and pass it mongoose
 // Ideally this should be run in the mongoose.connect callback function
@@ -45,7 +45,7 @@ moosadmin.buildModelData(require('mongoose'));
 
 ### Express Middleware
 ```
-var moosadmin = require('moosadmin',{server:true, port:3006});
+var moosadmin = require('moosadmin')({});
 
 // Once all the models have been loaded call buildModelData and pass it mongoose
 // Ideally this should be run in the mongoose.connect callback function
