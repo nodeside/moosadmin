@@ -229,7 +229,8 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
          }
 
          // Get the actual data from the api
-         $http.get(url).success(function(data) {
+         $http.get(url).then(function(res) {
+            var data = res.data;
             $scope.show = true;
             $scope.gridOptions.totalItems = data.count;
             $scope.gridOptions.data = data.docs;
