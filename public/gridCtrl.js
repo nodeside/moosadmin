@@ -77,9 +77,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
          $location.search({
             'moosadminModel': $scope.modelSelected
          });
-
          $scope.gridOptions.columnDefs = [];
-
       }
 
       function setColumnsAndFilters() {
@@ -120,7 +118,6 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
             // Prevent editing got certain fields
             if (key == noCellEdit.id || key == noCellEdit.v) {
                column.enableCellEdit = false;
-
             }
 
             // Making a link if it is an object id
@@ -201,7 +198,7 @@ app.controller('GridCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$
 
          for (var field in query) {
             // If the query in the url matches a valid field
-            if (modelSchema[$scope.modelSelected].fields[field] && query[field]) {
+            if (modelSchema[$scope.modelSelected].fields[field] && (query[field] || query[field] === 0)) {
                // Add the query to our allFilter
                allFilters[field] = query[field];
             } else if (field !== 'moosadminModel') {

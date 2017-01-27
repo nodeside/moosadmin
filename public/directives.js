@@ -13,7 +13,37 @@ app.directive('filterText', function() {
          data: '=data'
       },
    };
-})
+});
+
+app.controller('FilterCtrl', ['$scope', '$location', '$rootScope', function($scope, $location, $rootScope) {
+   var query = $location.search();
+   $scope.filters = {};
+
+   // If url contains our field set the model to its value
+   if (query[$scope.data.field]) {
+      $scope.filters[$scope.data.field] = query[$scope.data.field];
+   }
+
+   // If a filter is changed we update the url
+   $scope.filterChanged = function() {
+      $location.search($scope.data.field, $scope.filters[$scope.data.field]);
+   }
+
+   $rootScope.$on('$locationChangeSuccess', function(event) {
+
+      var query = $location.search();
+
+      // Update field values based on the url
+      if (query[$scope.data.field]) {
+         $scope.filters[$scope.data.field] = query[$scope.data.field];
+      }
+
+   });
+
+}]);
+
+
+
 
 app.directive('filterNumber', function() {
    return {
@@ -45,32 +75,6 @@ app.directive('filterDate', function() {
    };
 })
 
-app.controller('FilterCtrl', ['$scope', '$location', '$rootScope', function($scope, $location, $rootScope) {
-   var query = $location.search();
-   $scope.filters = {};
-
-   // If url contains our field set the model to its value
-   if (query[$scope.data.field]) {
-      $scope.filters[$scope.data.field] = query[$scope.data.field];
-   }
-
-   // If a filter is changed we update the url
-   $scope.filterChanged = function() {
-      $location.search($scope.data.field, $scope.filters[$scope.data.field]);
-   }
-
-   $rootScope.$on('$locationChangeSuccess', function(event) {
-
-      var query = $location.search();
-
-      // Update field values based on the url
-      if (query[$scope.data.field]) {
-         $scope.filters[$scope.data.field] = query[$scope.data.field];
-      }
-
-   });
-
-}]);
 
 
 //////////////////////////filterDropdown Directive/////////////////////////////////////////////////
